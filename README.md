@@ -30,8 +30,12 @@ claude mcp add affilync -- env AFFILYNC_TOKEN=<your-jwt-token> npx @affilync/mcp
 
 ### Get your token
 
-1. Go to [app.affilync.com/settings/api-keys](https://app.affilync.com/settings/api-keys)
-2. Create a new API key
+The server sends `AFFILYNC_TOKEN` as `Authorization: Bearer <token>`, so it
+must be a **JWT access token** (from your Affilync login session or the OAuth
+flow) — a developer **API key (`af_live_...`) will NOT work** with this server
+as-is. To obtain one: log in at https://app.affilync.com, or complete the
+OAuth flow (see the Affilync CLI / SDK), and use the access token value as
+`AFFILYNC_TOKEN`. Note tokens expire (~60 min); re-issue as needed.
 3. Use the token value as `AFFILYNC_TOKEN`
 
 ## Available Tools
