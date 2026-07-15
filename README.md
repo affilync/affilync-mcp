@@ -2,6 +2,15 @@
 
 MCP (Model Context Protocol) server for [Affilync](https://app.affilync.com) — manage affiliate marketing directly from Claude.
 
+This package ships **two** servers that expose the same tools:
+
+| | Transport | Auth | Who runs it |
+|---|---|---|---|
+| **`affilync-mcp`** (stdio) | local subprocess | `AFFILYNC_TOKEN` env | each user, locally |
+| **`affilync-mcp-remote`** (HTTP) | hosted at `mcp.affilync.com` | OAuth 2.1 ("Connect Affilync") | Affilync (one deployment) |
+
+The **remote** server is the one Claude connects to by URL with one-click OAuth — see [Remote server](#remote-server-oauth-protected-resource). The **stdio** server (below) is for local/manual use with a pasted token.
+
 ## Setup
 
 ### Claude Desktop
@@ -94,10 +103,54 @@ npm install
 AFFILYNC_TOKEN=<token> npm run dev
 ```
 
-## Environment Variables
+## Environment Variables (stdio server)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AFFILYNC_TOKEN` | Yes | — | JWT access token |
 | `AFFILYNC_API_URL` | No | `https://api.affilync.com` | API base URL |
 | `AFFILYNC_READONLY` | No | `0` | Set to `1`/`true` to register read tools only (no mutations) |
+
+## Remote server (OAuth Protected Resource)
+
+`affilync-mcp-remote` is an HTTP server that Claude (or any MCP client) adds by
+**URL** and authenticates against with OAuth — no token to paste. It exposes the
+same tools as the stdio server, registered per-request from the user's token.
+
+Per the MCP authorization spec it is an OAuth 2.0 **Protected Resource**:
+
+- `GET /.well-known/oauth-protected-resource` (RFC 9728) points clients at the
+  Affilync Authorization Server (`api.affilync.com`).
+- Unauthenticated MCP calls get `401` + `WWW-Authenticate: Bearer resource_metadata="…"`,
+  so the client knows where to start the OAuth flow.
+- Each request's bearer token is verified **offline** against the AS's published
+  JWKS and MUST be **audience-bound** to this server (RFC 8707) — a token minted
+  for another Affilync client cannot be replayed here.
+- The token is then forwarded to `/api/gpt/v1/*`, where the backend re-enforces
+  auth, user-type and write-scope. A token without `api:write` runs read-only.
+
+### Run it
+
+```bash
+npm ci && npm run build
+AFFILYNC_API_URL=https://api.affilync.com \
+MCP_RESOURCE_URL=https://mcp.affilync.com \
+npm run start:remote          # or: affilync-mcp-remote
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_RESOURCE_URL` | `https://mcp.affilync.com` | This server's public URL (its OAuth resource identifier) |
+| `AFFILYNC_API_URL` | `https://api.affilync.com` | Authorization Server + API origin |
+| `PORT` | `8080` | HTTP port (Render sets this) |
+
+### Deploy
+
+`render.yaml` defines the `affilync-mcp-remote` web service. Two operator steps
+are required to go live (they can't be done from CI):
+
+1. Create the service from the blueprint (Render → New → Blueprint on this repo).
+2. Add DNS + custom domain: Cloudflare `CNAME mcp → <service>.onrender.com`
+   (proxied) and add `mcp.affilync.com` as a custom domain on the Render service.
+
+Health check: `GET /healthz`.

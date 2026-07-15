@@ -1,0 +1,25 @@
+# Render blueprint for the remote MCP server (OAuth Protected Resource).
+# Deploy target: https://mcp.affilync.com
+#
+# Operator steps to go live (cannot be done from CI):
+#   1. Create this service (Render dashboard → New → Blueprint, or point at this repo).
+#   2. Add a Cloudflare DNS record: CNAME mcp -> <service>.onrender.com (proxied),
+#      and add mcp.affilync.com as a custom domain on the Render service.
+services:
+  - type: web
+    name: affilync-mcp-remote
+    runtime: node
+    plan: starter
+    region: ohio
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:remote
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: AFFILYNC_API_URL
+        value: https://api.affilync.com
+      - key: MCP_RESOURCE_URL
+        value: https://mcp.affilync.com
