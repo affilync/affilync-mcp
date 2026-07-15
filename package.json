@@ -4,7 +4,8 @@
   "description": "Affilync MCP server — manage affiliate marketing from Claude",
   "type": "module",
   "bin": {
-    "affilync-mcp": "./dist/index.js"
+    "affilync-mcp": "./dist/index.js",
+    "affilync-mcp-remote": "./dist/remote.js"
   },
   "main": "dist/index.js",
   "files": [
@@ -17,7 +18,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:remote": "node dist/remote.js",
     "dev": "tsx src/index.ts",
+    "dev:remote": "tsx src/remote.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "prepublishOnly": "npm run build"
@@ -26,9 +29,12 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^4.21.2",
+    "jose": "^5.9.6",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
