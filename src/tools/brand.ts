@@ -36,9 +36,13 @@ export function registerBrandTools(
     "List affiliate applications for your campaigns",
     {
       application_status: z
-        .enum(["pending", "active", "rejected"])
+        .enum(["pending", "approved", "rejected", "invited", "removed"])
         .optional()
-        .describe("Filter by application status"),
+        .describe(
+          "Filter by seat status: pending (applied, awaiting the brand's decision), " +
+            "approved (accepted affiliate), rejected (declined), invited (brand-initiated " +
+            "seat the affiliate has not accepted yet), removed (previously approved, later removed)"
+        ),
       ...pageParams,
     },
     READ,
